@@ -5,15 +5,31 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 )
 
-func DecodeMessage(msg []byte) error {
-	header, content, found := bytes.Cut(msg, []byte("\r\n\r\n"))
+type BaseMessage struct {
+	Method string `json:"method"`
+}
+
+const HEADER_PREAMBLE_LEN = len("Content-Length: ")
+
+func DecodeMessage(msg []byte) (*BaseMessage, error) {
+	header, _, found := bytes.Cut(msg, []byte("\r\n\r\n"))
 	if !found {
-		return errors.New("header not found")
+		return nil, errors.New("header not found")
 	}
 
-	return nil
+	// NOTE: header => Content-Length: <number>
+	// we already removed the /r/n/r/n bit
+	contentLengthBytes := header[HEADER_PREAMBLE_LEN:]
+	contentLength, err := strconv.Atoi(string(contentLengthBytes))
+	if err != nil {
+		return nil, err
+	}
+
+	_ = contentLength
+	return nil, nil
 }
 
 func EncodeMessage(msg any) string {
