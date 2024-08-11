@@ -59,3 +59,45 @@ func TestEncodeMessage(t *testing.T) {
 		}
 	})
 }
+
+func TestSplit(t *testing.T) {
+	t.Run("Splits", func(t *testing.T) {
+		incomingMsg := "Content-Length: 17\r\n\r\n{\"Method\":\"test\"}"
+		msgContent := []byte("{\"Method\":\"test\"}")
+
+		length, data, err := Split([]byte(incomingMsg), false)
+		if err != nil {
+			t.Errorf("error: %s", err)
+		}
+
+		if length != 17 {
+			t.Errorf("expected Content-Length: 17, got: %d", length)
+		}
+
+		if slices.Compare(data, msgContent) != 0 {
+			t.Errorf("expected %s, got: %s", msgContent, data)
+		}
+	})
+
+	t.Run("Returns Empty Vals in No Input", func(t *testing.T) {
+		length, data, err := Split([]byte(""), false)
+		if err != nil {
+			t.Errorf("did not expect an error, got: %s", err)
+		}
+
+		if length != 0 {
+			t.Errorf("expected a length of 0, got: %d", length)
+		}
+
+		if data != nil {
+			t.Errorf("did not expect data, got: %s", data)
+		}
+	})
+
+	t.Run("Decodes Empty Line", func(t *testing.T) {
+		_, _, err := DecodeMessage([]byte(""))
+		if err == nil {
+			t.Errorf("wanted an error, got: %s", err)
+		}
+	})
+}

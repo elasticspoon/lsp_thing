@@ -43,3 +43,19 @@ func EncodeMessage(msg any) string {
 	}
 	return fmt.Sprintf("Content-Length: %d\r\n\r\n%s", len(content), content)
 }
+
+// type SplitFunc func(data []byte, atEOF bool) (advance int, token []byte, err error)
+func Split(data []byte, _ bool) (int, []byte, error) {
+	header, content, found := bytes.Cut(data, []byte("\r\n\r\n"))
+	if !found {
+		return 0, nil, nil // we are waitng
+	}
+
+	contentLengthBytes := header[HEADER_PREAMBLE_LEN:]
+	contentLength, err := strconv.Atoi(string(contentLengthBytes))
+	if err != nil {
+		return 0, nil, err
+	}
+
+	return contentLength, content[:contentLength], nil
+}
