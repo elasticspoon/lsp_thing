@@ -1,38 +1,36 @@
 package rpc
 
 import (
-	"encoding/json"
-	"fmt"
+	"slices"
 	"testing"
 )
 
 func TestDecodeMessage(t *testing.T) {
-	t.Run("Decodes Length of Header", func(t *testing.T) {
-		want := BaseMessage{Method: "hello"}
-		testMsg, _ := json.Marshal(want)
+	t.Run("Decodes the Method", func(t *testing.T) {
+		incomingMsg := "Content-Length: 17\r\n\r\n{\"Method\":\"test\"}"
+		msgContent := []byte("{\"Method\":\"test\"}")
 
-		got, err := DecodeMessage([]byte(fmt.Sprintf("Content-Length: 16/r/n/r/n%s", testMsg)))
+		method, content, err := DecodeMessage([]byte(incomingMsg))
+		contentLength := len(content)
 		if err != nil {
 			t.Errorf("error: %s", err)
 		}
-		if got != &want {
-			t.Errorf("expected %d bytes, got %d", want, got)
-		}
-	})
 
-	t.Run("Decodes Length of Header", func(t *testing.T) {
-		want := 2
-		bytes, err := DecodeMessage([]byte("Content-Length: 2\r\n\r\n\"\""))
-		if err != nil {
-			t.Errorf("error: %s", err)
+		if contentLength != 17 {
+			t.Errorf("expected Content-Length: 17, got: %d", contentLength)
 		}
-		if bytes != nil {
-			t.Errorf("expected %d bytes, got %d", want, bytes)
+
+		if slices.Compare(content, msgContent) != 0 {
+			t.Errorf("expected %s, got: %s", msgContent, content)
+		}
+
+		if method != "test" {
+			t.Errorf("expected %s, got %s", "test", method)
 		}
 	})
 
 	t.Run("Decodes Empty Line", func(t *testing.T) {
-		_, err := DecodeMessage([]byte(""))
+		_, _, err := DecodeMessage([]byte(""))
 		if err == nil {
 			t.Errorf("wanted an error, got: %s", err)
 		}

@@ -14,10 +14,10 @@ type BaseMessage struct {
 
 const HEADER_PREAMBLE_LEN = len("Content-Length: ")
 
-func DecodeMessage(msg []byte) (*BaseMessage, error) {
-	header, _, found := bytes.Cut(msg, []byte("\r\n\r\n"))
+func DecodeMessage(msg []byte) (string, []byte, error) {
+	header, content, found := bytes.Cut(msg, []byte("\r\n\r\n"))
 	if !found {
-		return nil, errors.New("header not found")
+		return "", nil, errors.New("header not found")
 	}
 
 	// NOTE: header => Content-Length: <number>
@@ -25,11 +25,15 @@ func DecodeMessage(msg []byte) (*BaseMessage, error) {
 	contentLengthBytes := header[HEADER_PREAMBLE_LEN:]
 	contentLength, err := strconv.Atoi(string(contentLengthBytes))
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
 
-	_ = contentLength
-	return nil, nil
+	var baseMessage BaseMessage
+	if err := json.Unmarshal(content[:contentLength], &baseMessage); err != nil {
+		return "", nil, err
+	}
+
+	return baseMessage.Method, content[:contentLength], nil
 }
 
 func EncodeMessage(msg any) string {
