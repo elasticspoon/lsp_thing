@@ -61,25 +61,24 @@ func TestEncodeMessage(t *testing.T) {
 }
 
 func TestSplit(t *testing.T) {
-	t.Run("Splits", func(t *testing.T) {
-		incomingMsg := "Content-Length: 17\r\n\r\n{\"Method\":\"test\"}"
-		msgContent := []byte("{\"Method\":\"test\"}")
+	t.Run("splits to length in header", func(t *testing.T) {
+		incomingMsg := "Content-Length: 17\r\n\r\n{\"Method\":\"test\"}extrastuff"
 
 		length, data, err := Split([]byte(incomingMsg), false)
 		if err != nil {
 			t.Errorf("error: %s", err)
 		}
 
-		if length != 17 {
-			t.Errorf("expected Content-Length: 17, got: %d", length)
+		if length != 39 {
+			t.Errorf("expected length of 39, got: %d", length)
 		}
 
-		if slices.Compare(data, msgContent) != 0 {
-			t.Errorf("expected %s, got: %s", msgContent, data)
+		if slices.Compare(data, []byte(incomingMsg)[:39]) != 0 {
+			t.Errorf("expected %s, got: %s", []byte(incomingMsg)[:39], data)
 		}
 	})
 
-	t.Run("Returns Empty Vals in No Input", func(t *testing.T) {
+	t.Run("Waits (0, nil, nil) if in no input", func(t *testing.T) {
 		length, data, err := Split([]byte(""), false)
 		if err != nil {
 			t.Errorf("did not expect an error, got: %s", err)
@@ -94,10 +93,18 @@ func TestSplit(t *testing.T) {
 		}
 	})
 
-	t.Run("Decodes Empty Line", func(t *testing.T) {
-		_, _, err := DecodeMessage([]byte(""))
-		if err == nil {
-			t.Errorf("wanted an error, got: %s", err)
+	t.Run("Waits (0, nil, nil) if input is shorter than expected length", func(t *testing.T) {
+		length, data, err := Split([]byte("Content-Length: 17\r\n\r\n{\""), false)
+		if err != nil {
+			t.Errorf("did not expect an error, got: %s", err)
+		}
+
+		if length != 0 {
+			t.Errorf("expected a length of 0, got: %d", length)
+		}
+
+		if data != nil {
+			t.Errorf("did not expect data, got: %s", data)
 		}
 	})
 }

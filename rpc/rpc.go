@@ -57,5 +57,12 @@ func Split(data []byte, _ bool) (int, []byte, error) {
 		return 0, nil, err
 	}
 
-	return contentLength, content[:contentLength], nil
+	// Wait for more
+	if len(content) < contentLength {
+		return 0, nil, nil
+	}
+
+	// header + /r/n/r/n + content
+	totalLength := len(header) + 4 + contentLength
+	return totalLength, data[:totalLength], nil
 }
