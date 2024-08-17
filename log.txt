@@ -1,8 +1,14 @@
-[baby_lsp]2024/08/15 20:28:28 main.go:15: logging started
-[baby_lsp]2024/08/15 20:28:28 main.go:31: got method: initialize
-[baby_lsp]2024/08/15 20:28:28 main.go:38: Connected to Neovim 0.10.0-dev+v0.10.0
-[baby_lsp]2024/08/15 20:28:28 main.go:45: Sent bytes
-[baby_lsp]2024/08/15 20:28:28 main.go:31: got method: initialized
-[baby_lsp]2024/08/15 20:29:00 main.go:31: got method: textDocument/didOpen
-[baby_lsp]2024/08/15 20:29:00 main.go:31: got method: textDocument/didChange
-[baby_lsp]2024/08/15 20:29:12 main.go:31: got method: textDocument/didClose
+[baby_lsp]2024/08/16 23:55:27 main.go:15: logging started
+[baby_lsp]2024/08/16 23:55:27 main.go:31: got method: initialize
+[baby_lsp]2024/08/16 23:55:27 main.go:38: Connected to Neovim 0.10.0-dev+v0.10.0
+[baby_lsp]2024/08/16 23:55:27 main.go:45: Sent bytes
+[baby_lsp]2024/08/16 23:55:27 main.go:31: got method: initialized
+[baby_lsp]2024/08/17 00:08:10 main.go:31: got method: textDocument/didOpen
+[baby_lsp]2024/08/17 00:08:10 main.go:31: got method: textDocument/didChange
+[baby_lsp]2024/08/17 00:08:12 main.go:31: got method: textDocument/didClose
+[baby_lsp]2024/08/17 00:08:17 main.go:31: got method: textDocument/didOpen
+[baby_lsp]2024/08/17 00:08:17 main.go:31: got method: textDocument/didChange
+[baby_lsp]2024/08/17 00:08:23 main.go:31: got method: textDocument/didClose
+[baby_lsp]2024/08/17 00:08:36 main.go:31: got method: textDocument/didOpen
+[baby_lsp]2024/08/17 00:08:36 main.go:31: got method: textDocument/didChange
+[baby_lsp]2024/08/17 00:08:37 main.go:31: got method: textDocument/didClose
