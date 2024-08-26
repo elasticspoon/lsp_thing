@@ -15,8 +15,8 @@ type ClientInfo struct {
 }
 
 type InitializeResponse struct {
-	Result InitializeResult `json:"result"`
 	Response
+	Result InitializeResult `json:"result"`
 }
 
 type InitializeResult struct {
@@ -33,6 +33,8 @@ type ServerInfo struct {
 	Version string `json:"version"`
 	Name    string `json:"name"`
 }
+
+type InitializeResponseFunc func(*InitializeRequestParams) (*InitializeResponse, error)
 
 func NewInitializeResponse(id int) InitializeResponse {
 	return InitializeResponse{

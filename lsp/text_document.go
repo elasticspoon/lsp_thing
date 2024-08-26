@@ -49,6 +49,8 @@ type MarkupContent struct {
 	Value string `json:"value"`
 }
 
+type HoverResponseFunc func(*HoverParams) (*HoverResponse, error)
+
 func NewHoverResponse(id int) HoverResponse {
 	return HoverResponse{
 		Response: Response{

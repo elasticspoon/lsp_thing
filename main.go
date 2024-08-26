@@ -1,9 +1,10 @@
 package main
 
 import (
+	"babylsp/handlers"
 	"babylsp/lsp"
 	"babylsp/rpc"
-	"bufio"
+	"babylsp/server"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,19 +16,15 @@ func main() {
 	logger := getLogger("/home/bandito/Projects/lsp_thing/log.txt")
 	logger.Println("logging started")
 
-	scanner := bufio.NewScanner(os.Stdin)
-	scanner.Split(rpc.Split)
-
+	reader := os.Stdin
 	writer := os.Stdout
 
-	for scanner.Scan() {
-		msg := scanner.Bytes()
-		method, contents, err := rpc.DecodeMessage(msg)
-		if err != nil {
-			logger.Printf("got error: %s", err)
-		}
-		handleMessage(logger, writer, method, contents)
-	}
+	server, _ := server.NewServer(logger, reader, writer,
+		server.WithHoverReponse(handlers.HoverHandler),
+		server.WithHoverReponse(handlers.HoverHandler),
+	)
+
+	server.Serve()
 }
 
 func handleMessage(logger *log.Logger, writer io.Writer, method string, contents []byte) {

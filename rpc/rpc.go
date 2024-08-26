@@ -14,6 +14,8 @@ type BaseMessage struct {
 
 const HEADER_PREAMBLE_LEN = len("Content-Length: ")
 
+var jsonNull = json.RawMessage("null")
+
 func DecodeMessage(msg []byte) (string, []byte, error) {
 	header, content, found := bytes.Cut(msg, []byte("\r\n\r\n"))
 	if !found {
@@ -65,4 +67,31 @@ func Split(data []byte, _ bool) (int, []byte, error) {
 	// header + /r/n/r/n + content
 	totalLength := len(header) + 4 + contentLength
 	return totalLength, data[:totalLength], nil
+}
+
+type anyMessage struct {
+	request  *Request
+	response *Response
+}
+
+func (m anyMessage) MarshalJSON() ([]byte, error) {
+	var v any
+	switch {
+	case m.request != nil && m.response == nil:
+		v = m.request
+	case m.request == nil && m.response != nil:
+		v = m.response
+	}
+
+	if v != nil {
+		return json.Marshal(v)
+	}
+
+	return nil, fmt.Errorf("anyMessage must have exactly 1 of request or response set")
+}
+
+type Response struct {
+	JSONRPC string           `json:"jsonrpc"`
+	ID      int              `json:"id"`
+	Params  *json.RawMessage `json:"params"`
 }
