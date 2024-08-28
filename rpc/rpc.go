@@ -89,9 +89,3 @@ func (m anyMessage) MarshalJSON() ([]byte, error) {
 
 	return nil, fmt.Errorf("anyMessage must have exactly 1 of request or response set")
 }
-
-type Response struct {
-	JSONRPC string           `json:"jsonrpc"`
-	ID      int              `json:"id"`
-	Params  *json.RawMessage `json:"params"`
-}

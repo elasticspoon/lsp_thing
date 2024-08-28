@@ -26,7 +26,10 @@ func (r Request) MarshalJSON() ([]byte, error) {
 
 func (r *Request) UnmarshalJSON(msg []byte) error {
 	request := make(map[string]any)
-	_ = request
+
+	// used to tell apart params: null and params omitted
+	emptyParams := &json.RawMessage{}
+	request["params"] = emptyParams
 
 	decoder := json.NewDecoder(bytes.NewReader(msg))
 	decoder.UseNumber()
@@ -63,16 +66,23 @@ func (r *Request) UnmarshalJSON(msg []byte) error {
 		return fmt.Errorf("cannot decode ID type: %T", rawID)
 	}
 
-	// parse params
-	// we Marshal params because during the decode
-	// it may have been decoded we want it to remain as raw json
-	// ex: [42, 22] would be an array of ints instead of a string
-	// thus, we Marshal back to a string and cast it
-	params, err := json.Marshal(request["params"])
-	if err != nil {
-		return err
+	switch request["params"] {
+	case nil:
+		r.Params = &jsonNull
+	case emptyParams:
+		r.Params = nil
+	default:
+		// parse params
+		// we Marshal params because during the decode
+		// it may have been decoded we want it to remain as raw json
+		// ex: [42, 22] would be an array of ints instead of a string
+		// thus, we Marshal back to a string and cast it
+		params, err := json.Marshal(request["params"])
+		if err != nil {
+			return err
+		}
+		r.Params = (*json.RawMessage)(&params)
 	}
-	r.Params = (*json.RawMessage)(&params)
 
 	return nil
 }

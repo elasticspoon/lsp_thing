@@ -28,6 +28,34 @@ func TestDecodeRequest(t *testing.T) {
 		}
 	})
 
+	t.Run("deals with omitted params", func(t *testing.T) {
+		incomingJsonRpcRequest := []byte(`{ "jsonrpc": "2.0", "method": "subtract", "id": 1 }`)
+
+		var request Request
+		err := request.UnmarshalJSON(incomingJsonRpcRequest)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
+		if request.Params != nil {
+			t.Fatalf("expected params: nil, got: %s", *request.Params)
+		}
+	})
+
+	t.Run("deals with null params", func(t *testing.T) {
+		incomingJsonRpcRequest := []byte(`{ "jsonrpc": "2.0", "method": "subtract", "params": null, "id": 1 }`)
+
+		var request Request
+		err := request.UnmarshalJSON(incomingJsonRpcRequest)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
+		if string(*request.Params) != string(jsonNull) {
+			t.Fatalf("expected params: null, got: %s", *request.Params)
+		}
+	})
+
 	t.Run("returns correct errors", func(t *testing.T) {
 		tests := []struct {
 			request string
@@ -78,7 +106,7 @@ func TestEncodeRequest(t *testing.T) {
 		t.Fatalf("expected ID: 3, got: %d", got.ID)
 	}
 
-	wantParams := `[21,23]`
+	wantParams := string(json.RawMessage(`[21,23]`))
 	if string(*got.Params) != wantParams {
 		t.Fatalf("expected params: %s, got: %s", wantParams, *got.Params)
 	}
