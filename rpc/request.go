@@ -8,8 +8,8 @@ import (
 
 type Request struct {
 	Params *json.RawMessage `json:"params,omitempty"`
+	ID     *int             `json:"id"`
 	Method string           `json:"method"`
-	ID     int              `json:"id"`
 }
 
 func (r Request) MarshalJSON() ([]byte, error) {
@@ -45,7 +45,6 @@ func (r *Request) UnmarshalJSON(msg []byte) error {
 	}
 
 	// parse jsonrpc
-
 	rpc, ok := request["jsonrpc"].(string)
 	if !ok {
 		return fmt.Errorf("missing field jsonrpc")
@@ -55,34 +54,18 @@ func (r *Request) UnmarshalJSON(msg []byte) error {
 	}
 
 	// parse ID
-	switch rawID := request["id"].(type) {
-	case json.Number:
-		num, err := rawID.Int64()
-		if err != nil {
-			return err
-		}
-		r.ID = int(num)
-	default:
-		return fmt.Errorf("cannot decode ID type: %T", rawID)
+	id, err := parseID(request["id"])
+	if err != nil {
+		return err
+	} else {
+		r.ID = id
 	}
 
-	switch request["params"] {
-	case nil:
-		r.Params = &jsonNull
-	case emptyParams:
-		r.Params = nil
-	default:
-		// parse params
-		// we Marshal params because during the decode
-		// it may have been decoded we want it to remain as raw json
-		// ex: [42, 22] would be an array of ints instead of a string
-		// thus, we Marshal back to a string and cast it
-		params, err := json.Marshal(request["params"])
-		if err != nil {
-			return err
-		}
-		r.Params = (*json.RawMessage)(&params)
+	params, err := parseOptionalJson(request["params"], emptyParams)
+	if err != nil {
+		return err
 	}
+	r.Params = params
 
 	return nil
 }

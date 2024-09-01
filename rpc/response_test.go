@@ -14,96 +14,71 @@ func TestUnmarshallResponse(t *testing.T) {
 			t.Fatalf("error: %s", err)
 		}
 
-		if response.ID != 1 {
+		if *response.ID != 1 {
 			t.Fatalf("expect ID: 1 got: %d", response.ID)
 		}
 
 		wantResult := `[42,23]`
 		if string(*response.Result) != wantResult {
-			t.Fatalf("expected params: %s, got: %s", wantResult, *response.Result)
+			t.Fatalf("expected result: %s, got: %s", wantResult, *response.Result)
 		}
 	})
 
-	// t.Run("deals with omitted params", func(t *testing.T) {
-	// 	incomingJsonRpcRequest := []byte(`{ "jsonrpc": "2.0", "method": "subtract", "id": 1 }`)
-	//
-	// 	var request Request
-	// 	err := request.UnmarshalJSON(incomingJsonRpcRequest)
-	// 	if err != nil {
-	// 		t.Fatalf("error: %s", err)
-	// 	}
-	//
-	// 	if request.Params != nil {
-	// 		t.Fatalf("expected params: nil, got: %s", *request.Params)
-	// 	}
-	// })
-	//
-	// t.Run("deals with null params", func(t *testing.T) {
-	// 	incomingJsonRpcRequest := []byte(`{ "jsonrpc": "2.0", "method": "subtract", "params": null, "id": 1 }`)
-	//
-	// 	var request Request
-	// 	err := request.UnmarshalJSON(incomingJsonRpcRequest)
-	// 	if err != nil {
-	// 		t.Fatalf("error: %s", err)
-	// 	}
-	//
-	// 	if string(*request.Params) != string(jsonNull) {
-	// 		t.Fatalf("expected params: null, got: %s", *request.Params)
-	// 	}
-	// })
-	//
-	// t.Run("returns correct errors", func(t *testing.T) {
-	// 	tests := []struct {
-	// 		request string
-	// 		want    string
-	// 	}{
-	// 		{request: `{ "method": "subtract", "params": [42, 23], "id": 3  }`, want: "missing field jsonrpc"},
-	// 		{request: `{ "jsonrpc": "3.0", "method": "subtract", "params": [42, 23], "id": 3  }`, want: "cannot decode jsonrpc: 3.0"},
-	// 		{request: `{ "jsonrpc": "2.0", "method": "subtract", "params": [42, 23], "id": "3"  }`, want: "cannot decode ID type: string"},
-	// 		{request: `{ "jsonrpc": "2.0", "params": [42, 23], "id": 3  }`, want: "missing field method"},
-	// 	}
-	//
-	// 	for _, test := range tests {
-	// 		var request Request
-	// 		err := request.UnmarshalJSON([]byte(test.request))
-	//
-	// 		if err == nil {
-	// 			t.Fatalf("expected error")
-	// 		}
-	// 		if err.Error() != test.want {
-	// 			t.Errorf("want error: %s, got: %s", test.want, err.Error())
-	// 		}
-	// 	}
-	// })
-}
+	t.Run("unmarshall basic error response", func(t *testing.T) {
+		incomingJsonRpcResponse := []byte(`{"jsonrpc": "2.0", "error": {"code": -32700, "message": "Parse error", "data": [21, 34]}, "id": null}`)
 
-// func TestMarshallResponse(t *testing.T) {
-// 	params, _ := json.Marshal([]int{21, 23})
-// 	request := Request{
-// 		Params: (*json.RawMessage)(&params),
-// 		Method: "test",
-// 		ID:     3,
-// 	}
-//
-// 	str, err := request.MarshalJSON()
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-//
-// 	var got Request
-// 	if err = got.UnmarshalJSON(str); err != nil {
-// 		t.Fatalf("error: %s", err)
-// 	}
-//
-// 	if got.Method != "test" {
-// 		t.Fatalf("expected method: test, got: %s", got.Method)
-// 	}
-// 	if got.ID != 3 {
-// 		t.Fatalf("expected ID: 3, got: %d", got.ID)
-// 	}
-//
-// 	wantParams := string(json.RawMessage(`[21,23]`))
-// 	if string(*got.Params) != wantParams {
-// 		t.Fatalf("expected params: %s, got: %s", wantParams, *got.Params)
-// 	}
-// }
+		var response Response
+		err := response.UnmarshalJSON(incomingJsonRpcResponse)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+
+		if response.ID != nil {
+			t.Fatalf("expect ID: nil got: %d", response.ID)
+		}
+
+		if response.Result != nil {
+			t.Fatalf("expected result: nil, got: %s", response.Result)
+		}
+
+		if response.Error == nil {
+			t.Fatalf("expected response to contain error")
+		}
+
+		wantErrMessage := "Parse error"
+		if response.Error.Message != wantErrMessage {
+			t.Fatalf("expect error message: %s got: %s", wantErrMessage, response.Error.Message)
+		}
+		if response.Error.Code != -32700 {
+			t.Fatalf("expect error code: -32700 got: %d", response.Error.Code)
+		}
+		wantErrData := `[21,34]`
+		if response.Error.Data == nil || string(*response.Error.Data) != wantErrData {
+			t.Fatalf("expected data: %s, got: %s", wantErrData, *response.Error.Data)
+		}
+	})
+
+	t.Run("returns correct errors", func(t *testing.T) {
+		tests := []struct {
+			response string
+			want     string
+		}{
+			{response: `{"error": {}, "id": null}`, want: "missing field jsonrpc"},
+			{response: `{"jsonrpc": "2.0", "result": [], "id": null}`, want: "missing field id"},
+			{response: `{"jsonrpc": "2.0", "error": {}, "result": [], "id": null}`, want: "must provide exactly one of fields result or error"},
+			{response: `{"jsonrpc": "2.0", "id": null}`, want: "must provide exactly one of fields result or error"},
+		}
+
+		for _, test := range tests {
+			var response Response
+			err := response.UnmarshalJSON([]byte(test.response))
+
+			if err == nil {
+				t.Fatalf("expected error: %s", test.want)
+			}
+			if err.Error() != test.want {
+				t.Errorf("want error: %s, got: %s", test.want, err.Error())
+			}
+		}
+	})
+}

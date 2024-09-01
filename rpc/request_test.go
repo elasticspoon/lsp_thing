@@ -18,7 +18,7 @@ func TestDecodeRequest(t *testing.T) {
 		if request.Method != "subtract" {
 			t.Fatalf("expected method: subtract, got: %s", request.Method)
 		}
-		if request.ID != 1 {
+		if *request.ID != 1 {
 			t.Fatalf("expect ID: 1 got: %d", request.ID)
 		}
 
@@ -38,7 +38,7 @@ func TestDecodeRequest(t *testing.T) {
 		}
 
 		if request.Params != nil {
-			t.Fatalf("expected params: nil, got: %s", *request.Params)
+			t.Fatalf("expected params: nil, got: %T", request.Params)
 		}
 	})
 
@@ -83,10 +83,11 @@ func TestDecodeRequest(t *testing.T) {
 
 func TestEncodeRequest(t *testing.T) {
 	params, _ := json.Marshal([]int{21, 23})
+	id := 3
 	request := Request{
 		Params: (*json.RawMessage)(&params),
 		Method: "test",
-		ID:     3,
+		ID:     &id,
 	}
 
 	str, err := request.MarshalJSON()
@@ -102,7 +103,7 @@ func TestEncodeRequest(t *testing.T) {
 	if got.Method != "test" {
 		t.Fatalf("expected method: test, got: %s", got.Method)
 	}
-	if got.ID != 3 {
+	if *got.ID != 3 {
 		t.Fatalf("expected ID: 3, got: %d", got.ID)
 	}
 
