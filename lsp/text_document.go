@@ -1,5 +1,7 @@
 package lsp
 
+import "context"
+
 type TextDocumentPositionParams struct {
 	TextDocument TextDocumentIdentifier `json:"textDocument"`
 	Position     Position               `json:"position"`
@@ -49,7 +51,7 @@ type MarkupContent struct {
 	Value string `json:"value"`
 }
 
-type HoverResponseFunc func(*HoverParams) (*HoverResponse, error)
+type HoverResponseFunc func(context.Context, *HoverParams) (*HoverResponse, error)
 
 func NewHoverResponse(id int) HoverResponse {
 	return HoverResponse{

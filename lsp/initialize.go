@@ -1,5 +1,7 @@
 package lsp
 
+import "context"
+
 type InitializeRequest struct {
 	Params InitializeRequestParams `json:"params"`
 	Request
@@ -34,7 +36,7 @@ type ServerInfo struct {
 	Name    string `json:"name"`
 }
 
-type InitializeResponseFunc func(*InitializeRequestParams) (*InitializeResponse, error)
+type InitializeResponseFunc func(context.Context, *InitializeRequestParams) (*InitializeResponse, error)
 
 func NewInitializeResponse(id int) InitializeResponse {
 	return InitializeResponse{

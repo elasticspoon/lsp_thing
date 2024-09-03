@@ -1,15 +1,48 @@
-package server
+package rpc
 
 import (
 	"babylsp/lsp"
-	"babylsp/rpc"
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
+	"strconv"
 	"time"
 )
+
+func EncodeMessage(msg any) string {
+	content, err := json.Marshal(msg)
+	if err != nil {
+		panic(err)
+	}
+	return fmt.Sprintf("Content-Length: %d\r\n\r\n%s", len(content), content)
+}
+
+// type SplitFunc func(data []byte, atEOF bool) (advance int, token []byte, err error)
+func Split(data []byte, _ bool) (int, []byte, error) {
+	header, content, found := bytes.Cut(data, []byte("\r\n\r\n"))
+	if !found {
+		return 0, nil, nil // we are waitng
+	}
+
+	contentLengthBytes := header[HEADER_PREAMBLE_LEN:]
+	contentLength, err := strconv.Atoi(string(contentLengthBytes))
+	if err != nil {
+		return 0, nil, err
+	}
+
+	// Wait for more
+	if len(content) < contentLength {
+		return 0, nil, nil
+	}
+
+	// header + /r/n/r/n + content
+	totalLength := len(header) + 4 + contentLength
+	return totalLength, data[:totalLength], nil
+}
 
 var DefaultTimeout = time.Second * 10
 
@@ -41,20 +74,23 @@ func NewServer(log *log.Logger, input io.Reader, output io.Writer, opts ...Handl
 
 func (server *Server) Serve() {
 	scanner := bufio.NewScanner(*server.Input)
-	scanner.Split(rpc.Split)
+	scanner.Split(Split)
 
 	for scanner.Scan() {
 		input := scanner.Bytes()
-		method, contents, err := rpc.DecodeMessage(input)
+		request, err := DecodeMessage(input)
 		if err != nil {
 			server.Log.Printf("got error: %s", err)
 		}
 
+		server.Log.Println(request.Method)
 		msg := Message{
 			Context: nil,
-			ID:      *1,
-			Method:  method,
-			Params:  contents,
+			Method:  request.Method,
+			Params:  *request.Params,
+		}
+		if request.ID != nil {
+			msg.ID = *request.ID
 		}
 		server.handlers.Handle(msg)
 	}
@@ -71,14 +107,14 @@ func (handlers *handlers) Handle(msg Message) (any, error) {
 		if handlers.Initialize != nil {
 			var params lsp.InitializeRequestParams
 			if err := json.Unmarshal(msg.Params, &params); err == nil {
-				return handlers.Initialize(&params)
+				return handlers.Initialize(msg.Context, &params)
 			}
 		}
 	case "textDocument/hover":
 		if handlers.HoverResponse != nil {
 			var params lsp.HoverParams
 			if err := json.Unmarshal(msg.Params, &params); err == nil {
-				return handlers.HoverResponse(&params)
+				return handlers.HoverResponse(msg.Context, &params)
 			}
 		}
 	}
@@ -104,8 +140,8 @@ func WithHoverReponse(hoverFunc lsp.HoverResponseFunc) HandlerOption {
 type Message struct {
 	Context context.Context
 	Method  string
-	ID      int
 	Params  json.RawMessage
+	ID      int
 }
 
 type Handler interface {
