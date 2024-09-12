@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"context"
 	"testing"
 )
 
@@ -95,4 +96,32 @@ func TestEncodeID(t *testing.T) {
 			t.Errorf("wanted %s, got: %s", want, str)
 		}
 	})
+}
+
+func TestNewContextAndFromContext(t *testing.T) {
+	baseCtx := context.Background()
+	sampleID := &ID{
+		ID:     1234,
+		NullID: false,
+	}
+
+	ctxWithID := NewContext(baseCtx, sampleID)
+
+	retrievedID, ok := FromContext(ctxWithID)
+
+	// Check if it was successful
+	if !ok {
+		t.Errorf("expected ID to be found in context")
+	}
+
+	// Check if the retrieved ID is the same as the one we set
+	if retrievedID != sampleID {
+		t.Errorf("expected ID %v, got %v", sampleID, retrievedID)
+	}
+
+	// Check if FromContext returns false for a context without the value
+	_, ok = FromContext(baseCtx)
+	if ok {
+		t.Errorf("expected no ID in base context, but got one")
+	}
 }

@@ -50,6 +50,7 @@ type Server struct {
 	handlers handlers
 	Input    io.Reader
 	Output   io.Writer
+	Context  context.Context
 	Log      *log.Logger
 	Timeout  time.Duration
 	Debug    bool
@@ -64,6 +65,7 @@ func NewServer(log *log.Logger, input io.Reader, output io.Writer, opts ...Handl
 	}
 
 	return &Server{
+		Context:  context.Background(),
 		Log:      log,
 		Input:    input,
 		Output:   output,
@@ -85,17 +87,20 @@ func (server *Server) Serve() {
 
 		server.Log.Println(request.Method)
 		msg := Message{
-			Context: nil,
-			Method:  request.Method,
-			Params:  *request.Params,
+			Method: request.Method,
+			Params: *request.Params,
 		}
 		if !request.NullID {
 			msg.ID = *request.ID
+			msg.Context = NewContext(server.Context, request.ID)
 		}
 
 		v, err := server.handlers.Handle(msg)
-		server.Log.Println(v, err)
-		WriteReponse(server.Output, v)
+		if err != nil {
+			server.Log.Printf("error handling %s: %s\n", request.Method, err)
+		} else {
+			WriteReponse(server.Output, v)
+		}
 	}
 }
 
