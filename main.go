@@ -68,7 +68,7 @@ func main() {
 // 	return lsp.NewHoverResponse(id)
 // }
 
-func writeReponse(writer io.Writer, msg any) {
+func WriteReponse(writer io.Writer, msg any) {
 	encodedMsg := rpc.EncodeMessage(msg)
 	writer.Write([]byte(encodedMsg))
 }

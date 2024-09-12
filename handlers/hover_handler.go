@@ -2,17 +2,20 @@ package handlers
 
 import (
 	"babylsp/lsp"
+	"babylsp/rpc"
 	"context"
+	"fmt"
 )
 
 func HoverHandler(ctx context.Context, params *lsp.HoverParams) (*lsp.HoverResponse, error) {
-	// i should add ID as a struct and then
-	// i can create a FromContext function
-	// to pull the id out
-	id := ctx.Value("id").(*int)
+	id, ok := rpc.FromContext(ctx)
+	if !ok {
+		return nil, fmt.Errorf("failed to obtain id from context")
+	}
+
 	return &lsp.HoverResponse{
 		Response: lsp.Response{
-			ID: id,
+			ID: &id.ID,
 			Message: lsp.Message{
 				RPC: "2.0",
 			},

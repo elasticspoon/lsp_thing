@@ -25,17 +25,16 @@ func parseOptionalJson(optJson any, emptyJson *json.RawMessage) (*json.RawMessag
 	}
 }
 
-func parseID(id any) (*int, error) {
+func parseID(id any) (*ID, error) {
 	switch rawID := id.(type) {
 	case json.Number:
 		num, err := rawID.Int64()
 		if err != nil {
 			return nil, err
 		}
-		num2 := int(num)
-		return &num2, nil
+		return &ID{ID: int(num), NullID: false}, nil
 	case nil:
-		return nil, nil
+		return &ID{NullID: true}, nil
 	default:
 		return nil, fmt.Errorf("cannot decode ID type: %T", rawID)
 	}

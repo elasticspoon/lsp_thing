@@ -48,8 +48,8 @@ var DefaultTimeout = time.Second * 10
 
 type Server struct {
 	handlers handlers
-	Input    *io.Reader
-	Output   *io.Writer
+	Input    io.Reader
+	Output   io.Writer
 	Log      *log.Logger
 	Timeout  time.Duration
 	Debug    bool
@@ -65,15 +65,15 @@ func NewServer(log *log.Logger, input io.Reader, output io.Writer, opts ...Handl
 
 	return &Server{
 		Log:      log,
-		Input:    &input,
-		Output:   &output,
+		Input:    input,
+		Output:   output,
 		Timeout:  DefaultTimeout,
 		handlers: handlers,
 	}, nil
 }
 
 func (server *Server) Serve() {
-	scanner := bufio.NewScanner(*server.Input)
+	scanner := bufio.NewScanner(server.Input)
 	scanner.Split(Split)
 
 	for scanner.Scan() {
@@ -89,11 +89,19 @@ func (server *Server) Serve() {
 			Method:  request.Method,
 			Params:  *request.Params,
 		}
-		if request.ID != nil {
+		if !request.NullID {
 			msg.ID = *request.ID
 		}
-		server.handlers.Handle(msg)
+
+		v, err := server.handlers.Handle(msg)
+		server.Log.Println(v, err)
+		WriteReponse(server.Output, v)
 	}
+}
+
+func WriteReponse(writer io.Writer, msg any) {
+	encodedMsg := EncodeMessage(msg)
+	writer.Write([]byte(encodedMsg))
 }
 
 type handlers struct {
@@ -141,7 +149,7 @@ type Message struct {
 	Context context.Context
 	Method  string
 	Params  json.RawMessage
-	ID      int
+	ID
 }
 
 type Handler interface {

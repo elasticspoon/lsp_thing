@@ -8,15 +8,19 @@ import (
 
 type Request struct {
 	Params *json.RawMessage `json:"params,omitempty"`
-	ID     *int             `json:"id"`
 	Method string           `json:"method"`
+	*ID
 }
 
 func (r Request) MarshalJSON() ([]byte, error) {
 	request := map[string]any{
 		"jsonrpc": "2.0",
 		"method":  r.Method,
-		"id":      r.ID,
+	}
+	if r.NullID {
+		request["id"] = jsonNull
+	} else {
+		request["id"] = r.ID.ID
 	}
 	if r.Params != nil {
 		request["params"] = r.Params
@@ -53,12 +57,9 @@ func (r *Request) UnmarshalJSON(msg []byte) error {
 		return fmt.Errorf("cannot decode jsonrpc: %s", rpc)
 	}
 
-	// parse ID
-	id, err := parseID(request["id"])
-	if err != nil {
+	var err error
+	if r.ID, err = parseID(request["id"]); err != nil {
 		return err
-	} else {
-		r.ID = id
 	}
 
 	params, err := parseOptionalJson(request["params"], emptyParams)

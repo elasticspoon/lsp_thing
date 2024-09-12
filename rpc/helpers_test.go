@@ -54,8 +54,11 @@ func TestParseId(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if *result != 11 {
-			t.Errorf("wanted: 11, got: %d", *result)
+		if result.NullID != false {
+			t.Errorf("wanted NullID: false, got: %v", result.NullID)
+		}
+		if result.ID != 11 {
+			t.Errorf("wanted: 11, got: %d", result.ID)
 		}
 	})
 
@@ -79,8 +82,8 @@ func TestParseId(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if result != nil {
-			t.Errorf("wanted: nil, got: %d", result)
+		if result.NullID != true {
+			t.Errorf("wanted NullID: true, got: %v", result.NullID)
 		}
 	})
 }

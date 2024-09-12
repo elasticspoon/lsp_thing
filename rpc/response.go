@@ -7,14 +7,25 @@ import (
 )
 
 type Response struct {
-	Result  *json.RawMessage `json:"result,omitempty"`
-	Error   *Error           `json:"error,omitempty"`
-	ID      *int             `json:"id"`
-	JSONRPC string           `json:"jsonrpc"`
+	Result *json.RawMessage `json:"result,omitempty"`
+	Error  *Error           `json:"error,omitempty"`
+	*ID
+	JSONRPC string `json:"jsonrpc"`
 }
 
 func (r Response) MarshalJSON() ([]byte, error) {
-	return nil, nil
+	request := map[string]any{
+		"jsonrpc": "2.0",
+	}
+	if r.NullID {
+		request["id"] = jsonNull
+	} else {
+		request["id"] = r.ID.ID
+	}
+	if r.Error != nil {
+		request["error"] = r.Error
+	}
+	return json.Marshal(request)
 }
 
 func (r *Response) UnmarshalJSON(msg []byte) error {
@@ -48,13 +59,12 @@ func (r *Response) UnmarshalJSON(msg []byte) error {
 		return fmt.Errorf("must provide exactly one of fields result or error")
 	}
 
-	id, err := parseID(response["id"])
+	var err error
+	r.ID, err = parseID(response["id"])
 	if err != nil {
 		return err
-	} else if id == nil && hasResult {
+	} else if r.NullID && hasResult {
 		return fmt.Errorf("missing field id")
-	} else {
-		r.ID = id
 	}
 
 	if hasResult {

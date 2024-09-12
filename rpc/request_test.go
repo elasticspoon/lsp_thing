@@ -18,8 +18,11 @@ func TestDecodeRequest(t *testing.T) {
 		if request.Method != "subtract" {
 			t.Fatalf("expected method: subtract, got: %s", request.Method)
 		}
-		if *request.ID != 1 {
-			t.Fatalf("expect ID: 1 got: %d", request.ID)
+		if request.NullID != false {
+			t.Fatalf("expected request NullID: false, got: %v", request.NullID)
+		}
+		if request.ID.ID != 1 {
+			t.Fatalf("expect ID: 1 got: %d", request.ID.ID)
 		}
 
 		wantParams := `[42,23]`
@@ -83,11 +86,13 @@ func TestDecodeRequest(t *testing.T) {
 
 func TestEncodeRequest(t *testing.T) {
 	params, _ := json.Marshal([]int{21, 23})
-	id := 3
 	request := Request{
 		Params: (*json.RawMessage)(&params),
 		Method: "test",
-		ID:     &id,
+		ID: &ID{
+			ID:     3,
+			NullID: false,
+		},
 	}
 
 	str, err := request.MarshalJSON()
@@ -97,14 +102,17 @@ func TestEncodeRequest(t *testing.T) {
 
 	var got Request
 	if err = got.UnmarshalJSON(str); err != nil {
-		t.Fatalf("error: %s", err)
+		t.Fatalf("error unmarshalling %s: %s ", str, err)
 	}
 
 	if got.Method != "test" {
 		t.Fatalf("expected method: test, got: %s", got.Method)
 	}
-	if *got.ID != 3 {
-		t.Fatalf("expected ID: 3, got: %d", got.ID)
+	if got.NullID != false {
+		t.Fatalf("expected NullID: false, got: %v", got.NullID)
+	}
+	if got.ID.ID != 3 {
+		t.Fatalf("expected ID: 3, got: %d", got.ID.ID)
 	}
 
 	wantParams := string(json.RawMessage(`[21,23]`))

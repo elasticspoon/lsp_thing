@@ -38,8 +38,8 @@ type ServerInfo struct {
 
 type InitializeResponseFunc func(context.Context, *InitializeRequestParams) (*InitializeResponse, error)
 
-func NewInitializeResponse(id int) InitializeResponse {
-	return InitializeResponse{
+func NewInitializeResponse(id int) *InitializeResponse {
+	return &InitializeResponse{
 		Response: Response{
 			ID: &id,
 			Message: Message{

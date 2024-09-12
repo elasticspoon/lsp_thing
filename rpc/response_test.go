@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"encoding/json"
 	"testing"
 )
 
@@ -14,8 +15,11 @@ func TestUnmarshallResponse(t *testing.T) {
 			t.Fatalf("error: %s", err)
 		}
 
-		if *response.ID != 1 {
-			t.Fatalf("expect ID: 1 got: %d", response.ID)
+		if response.NullID != false {
+			t.Fatalf("expect NullID: false, got: %v", response.NullID)
+		}
+		if response.ID.ID != 1 {
+			t.Fatalf("expect ID: 1 got: %d", response.ID.ID)
 		}
 
 		wantResult := `[42,23]`
@@ -33,8 +37,8 @@ func TestUnmarshallResponse(t *testing.T) {
 			t.Fatalf("error: %s", err)
 		}
 
-		if response.ID != nil {
-			t.Fatalf("expect ID: nil got: %d", response.ID)
+		if response.NullID != true {
+			t.Fatalf("expect NullID: true, got: %v", response.NullID)
 		}
 
 		if response.Result != nil {
@@ -79,6 +83,53 @@ func TestUnmarshallResponse(t *testing.T) {
 			if err.Error() != test.want {
 				t.Errorf("want error: %s, got: %s", test.want, err.Error())
 			}
+		}
+	})
+}
+
+func TestEncodeResponse(t *testing.T) {
+	t.Run("encode basic error response", func(t *testing.T) {
+		data := json.RawMessage(`{"test": 33}`)
+		response := Response{
+			Error: &Error{
+				Data:    &data,
+				Message: "test message",
+				Code:    42,
+			},
+			ID:      &ID{ID: 3, NullID: false},
+			JSONRPC: "2.0",
+		}
+
+		str, err := response.MarshalJSON()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		var got Response
+		if err = got.UnmarshalJSON(str); err != nil {
+			t.Fatalf("error unmarshalling \"%s\": %s", str, err)
+		}
+
+		if got.NullID != false {
+			t.Fatalf("expected NullID: false, got: %v", got.NullID)
+		}
+		if got.ID.ID != 3 {
+			t.Fatalf("expected ID: 3, got: %d", got.ID.ID)
+		}
+		if got.Error == nil {
+			t.Fatalf("expected Error: got: nil")
+		}
+		if got.Error.Code != 42 {
+			t.Fatalf("expected Error.Code: 42, got: %d", got.Error.Code)
+		}
+		if got.Error.Message != "test message" {
+			t.Fatalf("expected Error.Message: test message, got: %s", got.Error.Message)
+		}
+		if string(*got.Error.Data) != string(data) {
+			t.Fatalf(`expected Error.Data: %v, got: %v`, data, *got.Error.Data)
+		}
+		if string(*got.Error.Data) != string(data) {
+			t.Fatalf(`expected Error.Data: "{"test":33}", got: "%s"`, *got.Error.Data)
 		}
 	})
 }
