@@ -52,20 +52,3 @@ type MarkupContent struct {
 }
 
 type HoverResponseFunc func(context.Context, *HoverParams) (*HoverResponse, error)
-
-func NewHoverResponse(id int) HoverResponse {
-	return HoverResponse{
-		Response: Response{
-			ID: &id,
-			Message: Message{
-				RPC: "2.0",
-			},
-		},
-		Result: HoverResult{
-			Contents: MarkupContent{
-				Kind:  "plaintext",
-				Value: "some random response",
-			},
-		},
-	}
-}
