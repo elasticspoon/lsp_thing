@@ -52,6 +52,7 @@ type Server struct {
 	Output   io.Writer
 	Context  context.Context
 	Log      *log.Logger
+	Data     map[string][][]byte
 	Timeout  time.Duration
 	Debug    bool
 }
@@ -64,14 +65,16 @@ func NewServer(log *log.Logger, input io.Reader, output io.Writer, opts ...Handl
 		}
 	}
 
-	return &Server{
-		Context:  context.Background(),
+	server := Server{
 		Log:      log,
 		Input:    input,
 		Output:   output,
 		Timeout:  DefaultTimeout,
 		handlers: handlers,
-	}, nil
+	}
+	server.Context = NewServerContext(context.Background(), &server)
+	server.Log.Println(server.Context)
+	return &server, nil
 }
 
 func (server *Server) Serve() {
@@ -86,6 +89,7 @@ func (server *Server) Serve() {
 		}
 
 		server.Log.Println(request.Method)
+		server.Log.Println(string(*request.Params))
 		msg := Message{
 			Method: request.Method,
 			Params: *request.Params,
@@ -95,23 +99,20 @@ func (server *Server) Serve() {
 			msg.Context = NewContext(server.Context, request.ID)
 		}
 
-		v, err := server.handlers.Handle(msg)
-		if err != nil {
-			server.Log.Printf("error handling %s: %s\n", request.Method, err)
-		} else {
-			WriteReponse(server.Output, v)
-		}
+		server.handlers.Handle(msg)
 	}
 }
 
-func WriteReponse(writer io.Writer, msg any) {
+func WriteReponse(writer io.Writer, msg any, log *log.Logger) {
 	encodedMsg := EncodeMessage(msg)
+	log.Printf("writing: %s", string(encodedMsg))
 	writer.Write([]byte(encodedMsg))
 }
 
 type handlers struct {
-	HoverResponse lsp.HoverResponseFunc
-	Initialize    lsp.InitializeResponseFunc
+	HoverResponse       lsp.HoverResponseFunc
+	TextDocumentDidOpen lsp.DocumentDidOpenFunc
+	Initialize          lsp.InitializeResponseFunc
 }
 
 func (handlers *handlers) Handle(msg Message) (any, error) {
@@ -128,6 +129,14 @@ func (handlers *handlers) Handle(msg Message) (any, error) {
 			var params lsp.HoverParams
 			if err := json.Unmarshal(msg.Params, &params); err == nil {
 				return handlers.HoverResponse(msg.Context, &params)
+			}
+		}
+	case "textDocument/didOpen":
+		if handlers.TextDocumentDidOpen != nil {
+			var params lsp.TextDocumentOpenParams
+			if err := json.Unmarshal(msg.Params, &params); err == nil {
+				err = handlers.TextDocumentDidOpen(msg.Context, &params)
+				return nil, err
 			}
 		}
 	}
@@ -150,6 +159,13 @@ func WithHoverReponse(hoverFunc lsp.HoverResponseFunc) HandlerOption {
 	}
 }
 
+func WithDidOpenHandler(hoverFunc lsp.DocumentDidOpenFunc) HandlerOption {
+	return func(handlers *handlers) error {
+		handlers.TextDocumentDidOpen = hoverFunc
+		return nil
+	}
+}
+
 type Message struct {
 	Context context.Context
 	Method  string
@@ -159,4 +175,15 @@ type Message struct {
 
 type Handler interface {
 	Hander(ctx *context.Context) (result any, err error)
+}
+
+var serverKey key = 2
+
+func NewServerContext(ctx context.Context, server *Server) context.Context {
+	return context.WithValue(ctx, serverKey, server)
+}
+
+func ServerFromContext(ctx context.Context) (*Server, bool) {
+	id, ok := ctx.Value(serverKey).(*Server)
+	return id, ok
 }

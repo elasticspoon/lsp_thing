@@ -27,6 +27,17 @@ type TextDocumentIdentifier struct {
 	URI string `json:"uri"`
 }
 
+type TextDocumentOpenParams struct {
+	TextDocument TextDocumentItem `json:"textDocument"`
+}
+
+type TextDocumentItem struct {
+	TextDocumentIdentifier
+	LanguageId string `json:"languageId"`
+	Text       string `json:"text"`
+	Version    int    `json:"version"`
+}
+
 type HoverRequest struct {
 	Request
 	Params HoverParams `json:"params"`
@@ -52,3 +63,5 @@ type MarkupContent struct {
 }
 
 type HoverResponseFunc func(context.Context, *HoverParams) (*HoverResponse, error)
+
+type DocumentDidOpenFunc func(context.Context, *TextDocumentOpenParams) error

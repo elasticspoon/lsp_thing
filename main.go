@@ -24,6 +24,7 @@ func run(ctx context.Context, reader io.Reader, writer io.Writer, _ []string) er
 		writer,
 		rpc.WithHoverReponse(handlers.HoverHandler),
 		rpc.WithInitializeResponse(handlers.IntializeHandler),
+		rpc.WithDidOpenHandler(handlers.DocumentDidOpenHandler),
 	)
 
 	server.Serve()
